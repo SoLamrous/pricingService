@@ -1,29 +1,36 @@
 const constants = require('./constant');
 
-exports.getPrices = function (res, product_id, quantity) {
+const items = constants.listOfPrices;
+
+exports.getPrices = function (res, product_id, quantity, conversionRate) {
   if (quantity < 0) {
-    return res.status(400).send({message: 'This is an error!'});
+    return res.status(400).send({message: 'quantity should be positive'});
   }
-  const items = constants.listOfPrices;
+
+  if (!conversionRate) {
+    return res.status(400).send({message: 'invalid symbol'});
+  }
+
   return items.filter(item => item.product_id === product_id)
   .map(function (item) {
-        const vatRatio = constants.listOfVAT[item.vat_band]
+        const vatRatio = constants.listOfVAT[item.vat_band];
         return {
           ...item,
           quantity,
-          total_price: Math.round((item.price * quantity) * 100) / 100,
-          vat_value: Math.round((item.price
+          price: Number((item.price * conversionRate).toFixed(2)),
+          total_price: Number((item.price * quantity * conversionRate).toFixed(2)),
+          vat_value: Number((item.price
               * quantity
-              * vatRatio) * 100) / 100,
-          price_with_vat: Math.round(
-              item.price
-              * quantity
-              * (1 + constants.listOfVAT[item.vat_band])
-              * 100) / 100
+              * vatRatio
+              * conversionRate).toFixed(2)),
+          price_with_vat: Number(
+              (item.price
+                  * quantity
+                  * (1 + constants.listOfVAT[item.vat_band])
+                  * conversionRate).toFixed(2))
         }
       }
   )
-
 };
 
 
